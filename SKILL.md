@@ -222,6 +222,8 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 - 顺序：`--check` → `--watch --dry-run` → `--install`
 - 必须现场验证两次：把 `EXPECT_IP` 改错时返回 1，改回时返回 0
 - Windows 用 `scripts/claude-guard.ps1`，支持 `-Check / -Watch / -DryRun / -Install / -Uninstall`，**不支持 hosts 阻断**（`BLOCK_HOSTS` 忽略），杀进程只覆盖桌面客户端，浏览器里的 claude.ai 管不到
+  - 已在 Windows 11 24H2 + PowerShell 5.1 实机跑通；`.ps1` 必须保存为 **UTF-8 with BOM**，否则中文系统上 5.1 按 GBK 解析中文注释会直接语法报错
+  - 通过 SSH 远程测杀进程时，GUI 程序（如 notepad）在非交互会话里起不来，用 `ping -t 127.0.0.1` 之类常驻进程代替，`APP_NAME` 改成对应名字
 
 ### 4. 路由器白名单（可选，先问，不要默认做）
 

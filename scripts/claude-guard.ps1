@@ -1,3 +1,6 @@
+﻿# 本文件必须保存为 UTF-8 with BOM。
+# Windows PowerShell 5.1 在中文系统上会按 GBK 读取无 BOM 的脚本，中文字符串会破坏语法导致整脚本无法解析。
+#
 # claude-guard.ps1 —— Windows 版：出口 IP 与锚定 IP 不一致时关闭 Claude
 #
 # 用法（管理员 PowerShell）：
