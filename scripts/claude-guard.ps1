@@ -76,7 +76,13 @@ function Get-ExitIp {
 function Stop-Claude {
     if ($DryRun) { Write-Log "[dry-run] 将结束进程: $AppName"; return }
     $p = Get-Process -Name $AppName -ErrorAction SilentlyContinue
-    if ($p) { $p | Stop-Process -Force; Write-Log "已结束 $AppName 进程" }
+    if ($p) {
+        $p | Stop-Process -Force
+        Write-Log "已结束 $AppName 进程"
+    } else {
+        # 不能静默：进程名对不上时守护会形同虚设，必须留下痕迹
+        Write-Log "[WARN] 未找到进程 $AppName，检查 APP_NAME 是否与实际进程名一致"
+    }
 }
 
 function Send-Notice($msg) {
