@@ -74,7 +74,7 @@ curl -s --max-time 10 https://chatgpt.com/cdn-cgi/trace | grep ip=
 | **Mac（Apple 芯片）+ Shadowrocket** | 导入 Clash 配置，代理组与规则大体通用 | —— | ⚪ 可当桌面客户端用，配置能套；TUN / DNS 能力与 mihomo 不完全对等，未实测 |
 | **macOS** | launchd 常驻出口守护 | `scripts/claude-guard.sh` | ✅ **本机完整闭环验证**（正常 → 异常触发 → 持续拦截 → 恢复 RECOVER） |
 | **Linux（Debian / Ubuntu）** | systemd user / NetworkManager dispatcher | `scripts/claude-guard.sh` | ⚪ 同构方案，脚本逻辑与 macOS 共线，未逐台跑 |
-| **Windows 10 / 11** | `schtasks` 登录自启 + PowerShell | `scripts/claude-guard.ps1` | ✅ **Windows 11 24H2 + PowerShell 5.1 实机验证**（`-Check` / `-Watch` / 真杀进程 / 计划任务安装卸载） |
+| **Windows 11**（Win10 同机制，未验证） | `schtasks` 登录自启 + PowerShell | `scripts/claude-guard.ps1` | ✅ **Windows 11 24H2 + PowerShell 5.1 实机验证**（`-Check` / `-Watch` / 真杀进程 / 计划任务安装卸载） |
 | **手机 / 平板（任何客户端，含 Shadowrocket）** | —— | `references/claude-usage.md` | ❌ 不提供方案，**不要用同一账号在手机上登录** |
 
 - **必须是 mihomo 内核**：原版 Clash 不支持 vless，`clash -t` 会直接报错。要求 mihomo ≥ v1.19（Reality 需要 ≥1.18）。
@@ -186,6 +186,8 @@ APP_PATTERN="Claude.app/Contents/MacOS/Claude"
 BLOCK_HOSTS=0                   # 1 = 同时写 hosts 阻断（需要免密 sudo）
 ```
 
+Windows 用同一份 `KEY=VALUE` 配置，路径换成 `%USERPROFILE%\.config\claude-guard\config`；参数是单横线：`-Check`、`-Watch`、`-Watch -DryRun`、`-Install`、`-Uninstall`；进程名用 `APP_NAME=Claude`；`BLOCK_HOSTS` 在 Windows 上不生效。
+
 ### 用法
 
 | 参数 | 作用 |
@@ -218,7 +220,7 @@ EXPECT_IP=<真实IP> ./claude-guard.sh --check  # 应该返回 0
 - **hosts 阻断需要免密 sudo**（`sudo -n`），否则自动降级为「只杀进程」，不报错；
 - **误杀风险**：`APP_PATTERN` 是字符串匹配，改过安装路径要同步改配置；
 - **不是防火墙**：它管的是 Claude 这个应用，不是整机出口。真正的断网保护在网络层；
-- **Windows 只验证了 PowerShell 5.1 + Windows 11 24H2**：`-Check`、`-Watch`、真实杀进程、`schtasks` 安装 / 卸载均已跑通；进程检测按可执行文件名匹配（默认 `Claude`），装成 Store 版后进程名不同时需改 `APP_NAME`；脚本必须保存为 UTF-8 with BOM，否则中文系统的 5.1 会按 GBK 解析中文注释导致语法错误。
+- **Windows 只验证了 PowerShell 5.1 + Windows 11 24H2**：`-Check`、`-Watch`、真实杀进程、`schtasks` 安装 / 卸载均已跑通；**恢复分支（`[RECOVER]`）只在 macOS 上实测过**，Windows 侧代码同构、未单独验证；进程检测按可执行文件名匹配（默认 `Claude`），装成 Store 版后进程名不同时需改 `APP_NAME`，改错会打 `[WARN]` 而不是静默失效；脚本必须保存为 UTF-8 with BOM，否则中文系统的 5.1 会按 GBK 解析中文注释导致语法错误。
 
 ---
 

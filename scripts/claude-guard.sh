@@ -60,7 +60,12 @@ kill_claude() {
     log "[dry-run] 将结束进程: $APP_PATTERN"
     return 0
   fi
-  pkill -f "$APP_PATTERN" >/dev/null 2>&1 && log "已结束 Claude 进程"
+  if pkill -f "$APP_PATTERN" >/dev/null 2>&1; then
+    log "已结束 Claude 进程"
+  else
+    # 变量必须用 ${} 包住：紧跟中文标点时 bash 会把多字节字符吃进变量名
+    log "[WARN] 未匹配到进程 ${APP_PATTERN}，检查 APP_PATTERN 是否与实际命令行一致"
+  fi
 }
 
 HOSTS_MARK_BEGIN="# >>> claude-guard"
