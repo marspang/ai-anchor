@@ -203,6 +203,7 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 - 开机顺序：先代理、后浏览器。
 - 时区 / 语言关闭「自动设置」，避免出差后与 IP 不一致。
 - 出事第一件事：查出口 IP 是否还是锚定的那个。
+- 家和公司两处用：不要一边一个出口，优先让笔记本回连家里（Tailscale exit node），两处共用同一个住宅 IP。细节见 `references/claude-usage.md` 第十节。
 
 ### 2. 网络隔离加固（问用户是否执行）
 

@@ -57,3 +57,11 @@ curl -s --max-time 8 https://claude.ai/cdn-cgi/trace | grep ip=
 1. `curl -s https://claude.ai/cdn-cgi/trace | grep ip=` 看出口是否还是锚定 IP。
 2. 浏览器打开 `https://ip.net.coffee/claude/`，看 Trust Score、IP 属性、DNS / WebRTC 是否泄漏。
 3. 再看时区、语言是否被系统改回去了。
+
+## 十、在家和公司两处用
+
+- **不要一边用一个出口**。同一账号短时间内从两个 IP 出现，在风控眼里等于账号被共用。
+- 首选做法：笔记本回家里的网络（Tailscale exit node），两处共用同一个住宅 IP，出口永远不变。
+- 非要在外面直接用：先确认出口是锚定 IP 再打开 Claude；公共 WiFi 认证期间不要开；不要用手机热点直接登录；连续在外超过几天宁可不用。
+
+完整说明见仓库 README 的「人不在家怎么办」一节。
