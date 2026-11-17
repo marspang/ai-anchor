@@ -66,18 +66,17 @@ curl -s --max-time 10 https://chatgpt.com/cdn-cgi/trace | grep ip=
 
 先说清楚这是给哪类设备用的：**下面这些 OpenWrt / ImmortalWrt / iStoreOS / LibWrt 都是路由器固件**，装在一台单独的机器上（AX6、N1、x86 小主机、工控机这类，统称**软路由**），由它统一给全家设备分流。它不是装在 Windows / macOS 里的软件，装在自己电脑上不管用。
 
-没有软路由也不是完全用不上：**mihomo 内核的桌面客户端**（Clash Verge Rev、mihomo party 等）规则、代理组、DNS、TUN 这套完全通用，可以照搬，只是技能不会去操作客户端 GUI，需要自己改配置；**Shadowrocket**（iPhone / iPad / Apple 芯片的 Mac 上都有）也能导入 Clash 配置，代理组和规则大体能套，Mac 上可以当桌面客户端用，手机上换一次网络就换一次出口、只适合临时应急；**v2rayN / V2Ray 系**规则模型不同，配置不能直接套，只能借用「单出口 + 兜底 + 防泄漏」的思路。
+没有软路由也不是完全用不上：**mihomo 内核的桌面客户端**（Clash Verge Rev、mihomo party 等）规则、代理组、DNS、TUN 这套完全通用，可以照搬，只是技能不会去操作客户端 GUI，需要自己改配置；**Shadowrocket**（Apple 芯片的 Mac 上也能装）同样能导入 Clash 配置，代理组和规则大体能套，在 Mac 上可以当桌面客户端用；**v2rayN / V2Ray 系**规则模型不同，配置不能直接套，只能借用「单出口 + 兜底 + 防泄漏」的思路。手机 / 平板一律不建议，理由见表格最后一行。
 
 | 平台 | 部署路线 | 相关文件 | 实测状态 |
 | --- | --- | --- | --- |
 | **软路由**（OpenWrt / ImmortalWrt / iStoreOS / LibWrt） | OpenClash + mihomo，`custom/` 覆盖注入 | `SKILL.md` | ✅ **公司路由器实机改过配置**（custom 注入、`clash -t` 预校验、规则命中均验证）；住宅线路待换 |
 | **Windows / macOS + Clash Verge Rev（mihomo 内核）** | 手工改配置：单成员代理组、规则顺序、DNS 照搬 | —— | ⚪ 配置模型通用，未逐版本实测 |
 | **Mac（Apple 芯片）+ Shadowrocket** | 导入 Clash 配置，代理组与规则大体通用 | —— | ⚪ 可当桌面客户端用，配置能套；TUN / DNS 能力与 mihomo 不完全对等，未实测 |
-| **iPhone / iPad + Shadowrocket** | 同上 | —— | ❌ 换一次网络就换一次出口，不建议用同一账号在手机上登录 |
 | **macOS** | launchd 常驻出口守护 | `scripts/claude-guard.sh` | ✅ **本机完整闭环验证**（正常 → 异常触发 → 持续拦截 → 恢复 RECOVER） |
 | **Linux（Debian / Ubuntu）** | systemd user / NetworkManager dispatcher | `scripts/claude-guard.sh` | ⚪ 同构方案，脚本逻辑与 macOS 共线，未逐台跑 |
 | **Windows 10 / 11** | `schtasks` 登录自启 + PowerShell | `scripts/claude-guard.ps1` | ⚪ 已写好，**无机器可跑**，未实测 |
-| **手机 / 平板（其他客户端）** | —— | `references/claude-usage.md` | ❌ 不提供方案，**建议不要在手机上登录同一账号** |
+| **手机 / 平板（任何客户端，含 Shadowrocket）** | —— | `references/claude-usage.md` | ❌ 不提供方案，**不要用同一账号在手机上登录** |
 
 - **必须是 mihomo 内核**：原版 Clash 不支持 vless，`clash -t` 会直接报错。要求 mihomo ≥ v1.19（Reality 需要 ≥1.18）。
 - **纯 REDIRECT 模式不在覆盖范围**：本技能只走 `TUN + fake-ip`，全机单一入口。TUN 和系统代理同时开会造成双入口，本身就是风控特征。
