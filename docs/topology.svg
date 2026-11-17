@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="672" viewBox="0 0 1100 672" role="img" aria-label="ai-anchor 网络拓扑：设备经软路由 OpenClash 分流，AI 流量固定到静态住宅 IP，国内与办公软件直连">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/>
+    </marker>
+    <style>
+      .card { stroke:#d0d7de; stroke-width:1.5; }
+      .t { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif; fill:#1f2328; }
+      .sub { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif; fill:#57606a; }
+      .line { stroke:#8c959f; stroke-width:1.5; fill:none; }
+    </style>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1099" height="671" fill="#ffffff"/>
+  <text class="sub" x="32" y="30" font-size="12">ai-anchor 拓扑 · 一个出口，三个去向</text>
+
+  <!-- 设备 -->
+  <rect class="card" x="330" y="46" width="440" height="66" fill="#f6f8fa"/>
+  <text class="t" x="550" y="74" font-size="16" text-anchor="middle" font-weight="600">家里 / 办公室的设备</text>
+  <text class="sub" x="550" y="96" font-size="12.5" text-anchor="middle">Mac · Windows · iPad · 手机（全部走路由器，不装客户端）</text>
+
+  <path class="line" marker-end="url(#arrow)" d="M550,112 L550,148"/>
+
+  <!-- 软路由 -->
+  <rect class="card" x="290" y="148" width="520" height="84" fill="#ddf4ff" stroke="#54aeff"/>
+  <text class="t" x="550" y="177" font-size="16" text-anchor="middle" font-weight="600">软路由（OpenWrt / ImmortalWrt / iStoreOS / LibWrt）</text>
+  <text class="sub" x="550" y="198" font-size="12.5" text-anchor="middle">OpenClash · mihomo 内核 · TUN + fake-ip · 全机唯一入口</text>
+  <text class="sub" x="550" y="217" font-size="12.5" text-anchor="middle">AI 组 = type: select，只挂一个静态住宅节点</text>
+
+  <!-- 分流线 -->
+  <path class="line" d="M550,232 L550,262"/>
+  <path class="line" d="M190,262 L910,262"/>
+  <path class="line" marker-end="url(#arrow)" d="M190,262 L190,288"/>
+  <path class="line" marker-end="url(#arrow)" d="M550,262 L550,288"/>
+  <path class="line" marker-end="url(#arrow)" d="M910,262 L910,288"/>
+
+  <!-- 分支 1 -->
+  <rect class="card" x="40" y="288" width="300" height="96" fill="#dafbe1" stroke="#4ac26b"/>
+  <text class="t" x="190" y="317" font-size="15" text-anchor="middle" font-weight="600">国内站点 / Adobe / Office</text>
+  <text class="sub" x="190" y="340" font-size="12.5" text-anchor="middle">DIRECT · 不经境外</text>
+  <text class="sub" x="190" y="360" font-size="12" text-anchor="middle">GEOSITE,cn / GEOIP,CN 命中</text>
+
+  <!-- 分支 2 -->
+  <rect class="card" x="400" y="288" width="300" height="96" fill="#ddf4ff" stroke="#54aeff"/>
+  <text class="t" x="550" y="317" font-size="15" text-anchor="middle" font-weight="600">Claude / GPT / Gemini 等</text>
+  <text class="sub" x="550" y="340" font-size="12.5" text-anchor="middle">🤖 AI住宅IP · 固定不切换</text>
+  <text class="sub" x="550" y="360" font-size="12" text-anchor="middle">AI 域名强制远端 DoH 解析</text>
+
+  <!-- 分支 3 -->
+  <rect class="card" x="760" y="288" width="300" height="96" fill="#f6f8fa" stroke="#afb8c1"/>
+  <text class="t" x="910" y="317" font-size="15" text-anchor="middle" font-weight="600">其余未命中流量</text>
+  <text class="sub" x="910" y="340" font-size="12.5" text-anchor="middle">MATCH 兜底 → 同上</text>
+  <text class="sub" x="910" y="360" font-size="12" text-anchor="middle">等效全局，但保留直连</text>
+
+  <!-- 住宅 IP -->
+  <path class="line" marker-end="url(#arrow)" d="M550,384 L550,420"/>
+  <rect class="card" x="400" y="420" width="300" height="86" fill="#fff8c5" stroke="#d4a72c"/>
+  <text class="t" x="550" y="449" font-size="15" text-anchor="middle" font-weight="600">静态住宅 IP（一个，是唯一）</text>
+  <text class="sub" x="550" y="471" font-size="12.5" text-anchor="middle">美国 / 日本 · 家宽或 ISP 段</text>
+  <text class="sub" x="550" y="490" font-size="12" text-anchor="middle">hosting=false · proxy=false</text>
+
+  <!-- 浏览器层 -->
+  <rect x="760" y="420" width="300" height="86" rx="10" fill="#ffffff" stroke="#afb8c1" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text class="t" x="910" y="447" font-size="14" text-anchor="middle" font-weight="600">浏览器层（可选）</text>
+  <text class="sub" x="910" y="468" font-size="12" text-anchor="middle">noleaker：拦 WebRTC / DNS / QUIC 泄漏</text>
+  <text class="sub" x="910" y="487" font-size="12" text-anchor="middle">时区、语言跟随出口</text>
+
+  <!-- 出口守护 -->
+  <path class="line" marker-end="url(#arrow)" d="M550,506 L550,540"/>
+  <rect x="40" y="540" width="1020" height="96" rx="10" fill="#f6f8fa" stroke="#afb8c1" stroke-width="1.5"/>
+  <text class="t" x="550" y="568" font-size="15" text-anchor="middle" font-weight="600">出口守护（可选，推荐）· claude-guard</text>
+  <text class="sub" x="550" y="590" font-size="12.5" text-anchor="middle">每 15 秒请求 claude.ai/cdn-cgi/trace，比对 ip= 与锚定值；连续 2 次不符 → 结束 Claude 进程（可加 hosts 阻断）</text>
+  <text class="sub" x="550" y="611" font-size="12.5" text-anchor="middle">恢复后打 [RECOVER] 并自动解除；macOS launchd · Linux systemd · Windows schtasks</text>
+
+  <text class="sub" x="32" y="660" font-size="11.5">⚠ 任何一处换 IP（换节点、关代理、连手机热点）都会被 Claude 记录为异常；守护只负责在异常发生时把风险截住，不替代单一出口。</text>
+</svg>

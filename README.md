@@ -51,6 +51,8 @@ AI 服务商的风控里有一条几乎是硬判据：
 | 域名漏走 | AI 域名清单全量入规则，再补 `MATCH` 兜底，冷门子域也无处可逃 |
 | 旁路泄漏 | `ipv6: false` + TUN 接管 TCP/UDP + AI 域名强制远端 DoH 解析，防 DNS / QUIC 裸奔 |
 
+![ai-anchor 拓扑：设备经软路由分流，AI 固定到静态住宅 IP，国内与办公软件直连](docs/topology.svg)
+
 配置完的判定标准也很直白，三条命令必须是同一个 IP：
 
 ```bash
@@ -249,6 +251,9 @@ curl -s --max-time 8 https://claude.ai/cdn-cgi/trace | grep ip=
 ```
 ai-anchor/
 ├── SKILL.md                       技能主文件：适用场景 / 输入 / A-F 执行流程 / 域名清单 / 13 条防封清单 / 交付要求
+├── README.md                      本文件
+├── docs/
+│   └── topology.svg               拓扑图：设备 → 软路由分流 → 三个去向 → 出口守护
 ├── references/
 │   ├── claude-usage.md            给最终用户的 9 条使用说明
 │   ├── network-isolation.md       三平台网络隔离命令（忘 WiFi / 关网卡 / 外出处理）
