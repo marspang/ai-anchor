@@ -12,7 +12,7 @@
 
 `ai-anchor` 是一个给 **AI Agent 用的技能包**（Skill），不是脚本合集。丢给 TRAE / Qoder / Qwen Code / WorkBuddy / Claude Code 这类能执行命令的 Agent，它会自己登路由器、认固件、看现有配置、改 OpenClash，再把 AI 出口钉死在一个静态住宅 IP 上。
 
-它解决的不是「怎么翻墙」，而是**「怎么让 Claude 看到的世界永远不变」**。
+它不管你怎么把流量送出去——那是订阅和节点的事；它只解决**「怎么让 Claude 看到的世界永远不变」**。
 
 ## 目录
 
@@ -64,9 +64,14 @@ curl -s --max-time 10 https://chatgpt.com/cdn-cgi/trace | grep ip=
 
 ## 支持的设备与实测情况
 
+先说清楚这是给哪类设备用的：**下面这些 OpenWrt / ImmortalWrt / iStoreOS / LibWrt 都是路由器固件**，装在一台单独的机器上（AX6、N1、x86 小主机、工控机这类，统称**软路由**），由它统一给全家设备分流。它不是装在 Windows / macOS 里的软件，装在自己电脑上不管用。
+
+没有软路由也不是完全用不上：**mihomo 内核的桌面客户端**（Clash Verge Rev、mihomo party 等）规则、代理组、DNS、TUN 这套完全通用，可以照搬，只是技能不会去操作客户端 GUI，需要自己改配置；**v2rayN / V2Ray 系**规则模型不同，配置不能直接套，只能借用「单出口 + 兜底 + 防泄漏」的思路。
+
 | 平台 | 部署路线 | 相关文件 | 实测状态 |
 | --- | --- | --- | --- |
-| **OpenWrt / ImmortalWrt / iStoreOS / LibWrt** | OpenClash + mihomo，`custom/` 覆盖注入 | `SKILL.md` | ✅ **公司路由器实机改过配置**（custom 注入、`clash -t` 预校验、规则命中均验证）；住宅线路待换 |
+| **软路由**（OpenWrt / ImmortalWrt / iStoreOS / LibWrt） | OpenClash + mihomo，`custom/` 覆盖注入 | `SKILL.md` | ✅ **公司路由器实机改过配置**（custom 注入、`clash -t` 预校验、规则命中均验证）；住宅线路待换 |
+| **Windows / macOS + Clash Verge Rev（mihomo 内核）** | 手工改配置：单成员代理组、规则顺序、DNS 照搬 | —— | ⚪ 配置模型通用，未逐版本实测 |
 | **macOS** | launchd 常驻出口守护 | `scripts/claude-guard.sh` | ✅ **本机完整闭环验证**（正常 → 异常触发 → 持续拦截 → 恢复 RECOVER） |
 | **Linux（Debian / Ubuntu）** | systemd user / NetworkManager dispatcher | `scripts/claude-guard.sh` | ⚪ 同构方案，脚本逻辑与 macOS 共线，未逐台跑 |
 | **Windows 10 / 11** | `schtasks` 登录自启 + PowerShell | `scripts/claude-guard.ps1` | ⚪ 已写好，**无机器可跑**，未实测 |
@@ -266,6 +271,8 @@ ai-anchor/
 **Q：我已经开了「全局模式」，是不是更安全？**
 
 **A：** 不是。全局会连带国内服务和 Adobe / Office 一起绕出去，体验变差还多绕一跳；真正的收益和「准全局」一样。用 `MATCH` 兜底等效全局，但保留了直连。
+
+还有一类更实际的原因：有些本地软件会拿出口 IP 判断授权状态，一旦发现请求来自境外地址，就可能要求重新验证授权、或者干脆拒绝启动。这类软件留在直连清单里，能省掉一堆莫名其妙的麻烦——所以「直连」不是顺手做的事，是刻意留的口子。
 
 **Q：为什么不能用 fallback / url-test 组？**
 
