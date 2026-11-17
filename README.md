@@ -6,8 +6,7 @@
 <a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.0.0-f1c40f?style=for-the-badge" alt="版本"></a>
 <a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E5%BD%A2%E5%BC%8F-Agent%20Skill-2f81f7?style=for-the-badge" alt="形式"></a>
 <img src="https://img.shields.io/badge/%E5%86%85%E6%A0%B8-OpenClash%20%C2%B7%20mihomo-fe7d37?style=for-the-badge" alt="内核">
-<img src="https://img.shields.io/badge/%E5%B9%B3%E5%8F%B0-macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-3fb950?style=for-the-badge" alt="平台">
-<img src="https://img.shields.io/badge/%E7%9B%AE%E6%A0%87-%E9%99%8D%E4%BD%8E%E5%B0%81%E5%8F%B7-e35d6a?style=for-the-badge" alt="目标">
+<img src="https://img.shields.io/badge/%E7%9B%AE%E6%A0%87-%E9%98%B2%E6%AD%A2%E5%9B%A0%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AF%BC%E8%87%B4%E7%9A%84%E5%B0%81%E5%8F%B7-e35d6a?style=for-the-badge" alt="目标">
 </p>
 
 `ai-anchor` 是一个给 **AI Agent 用的技能包**（Skill），不是脚本合集。丢给 TRAE / Qoder / Qwen Code / WorkBuddy / Claude Code 这类能执行命令的 Agent，它会自己登路由器、认固件、看现有配置、改 OpenClash，再把 AI 出口钉死在一个静态住宅 IP 上。
