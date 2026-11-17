@@ -222,6 +222,20 @@ EXPECT_IP=<真实IP> ./claude-guard.sh --check  # 应该返回 0
 - **hosts 阻断需要免密 sudo**（`sudo -n`），否则自动降级为「只杀进程」，不报错；
 - **误杀风险**：`APP_PATTERN` 是字符串匹配，改过安装路径要同步改配置；
 - **不是防火墙**：它管的是 Claude 这个应用，不是整机出口。真正的断网保护在网络层；
+- **管不到不出网卡的流量**：本机若残留了指向 `127.0.0.1:7890` 之类的代理设置，而那个端口没有程序在听，应用会直接连不上或退回直连——这类流量根本不经过路由器，TUN 规则再正确也拦不住。配完先查一遍：
+  ```powershell
+  # Windows
+  Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' | Select-Object ProxyEnable,ProxyServer
+  netsh winhttp show proxy
+  ```
+  ```bash
+  # macOS（网卡名按实际改）
+  networksetup -getwebproxy Wi-Fi
+  networksetup -getsecurewebproxy Wi-Fi
+  scutil --proxy | grep -i proxy
+  ```
+  有值但对应端口没程序监听，就说明它该关掉了；有值且真的在跑第三方代理客户端的，先决定留哪个入口，不要两个同时开。
+
 - **Windows 只验证了 PowerShell 5.1 + Windows 11 24H2**：`-Check`、`-Watch`、真实杀进程、`schtasks` 安装 / 卸载均已跑通；**恢复分支（`[RECOVER]`）只在 macOS 上实测过**，Windows 侧代码同构、未单独验证；进程检测按可执行文件名匹配（默认 `Claude`），装成 Store 版后进程名不同时需改 `APP_NAME`，改错会打 `[WARN]` 而不是静默失效；脚本必须保存为 UTF-8 with BOM，否则中文系统的 5.1 会按 GBK 解析中文注释导致语法错误。
 
 ---
