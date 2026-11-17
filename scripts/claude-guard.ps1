@@ -17,6 +17,8 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+# Windows PowerShell 5.1 在部分系统上默认不启用 TLS 1.2，会导致取不到 trace 而误判为出口异常
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { }
 $ConfPath = Join-Path $env:USERPROFILE ".config\claude-guard\config"
 $LogDir = Join-Path $env:USERPROFILE ".config\claude-guard"
 $LogPath = Join-Path $LogDir "guard.log"
@@ -26,18 +28,28 @@ $ExpectIp = ""
 $CheckUrl = "https://claude.ai/cdn-cgi/trace"
 $Interval = 15
 $Threshold = 2
+
 $AppName = "Claude"
+$AppNameExplicit = $false
 
 if (Test-Path $ConfPath) {
     Get-Content $ConfPath | ForEach-Object {
-        if ($_ -match '^\s*([A-Z_]+)\s*=\s*(.*)$') {
-            $k = $Matches[1]; $v = $Matches[2].Trim('"').Trim("'")
+        # 允许行尾 # 注释（与 macOS/Linux 版共用同一份配置文件）
+        $line = ($_ -replace '\s+#.*$', '').Trim()
+        if ($line -match '^([A-Za-z_]+)\s*=\s*(.*)$') {
+            $k = $Matches[1].ToUpper(); $v = $Matches[2].Trim().Trim('"').Trim("'")
             switch ($k) {
                 "EXPECT_IP"   { $ExpectIp = $v }
                 "CHECK_URL"   { $CheckUrl = $v }
-                "INTERVAL"    { $Interval = [int]$v }
-                "THRESHOLD"   { $Threshold = [int]$v }
-                "APP_NAME"    { $AppName = $v }
+                "INTERVAL"    { if ($v -match '^\d+$') { $Interval = [int]$v } }
+                "THRESHOLD"   { if ($v -match '^\d+$') { $Threshold = [int]$v } }
+                "APP_NAME"    { if ($v) { $AppName = $v; $AppNameExplicit = $true } }
+                "APP_PATTERN" {
+                    # macOS 行的写法是完整路径，这里只取可执行文件名
+                    if (-not $AppNameExplicit -and $v) {
+                        $AppName = [IO.Path]::GetFileName($v) -replace '\.exe$', ''
+                    }
+                }
             }
         }
     }
@@ -109,8 +121,7 @@ function Do-Watch {
 }
 
 function Do-Install {
-    $self = $MyInvocation.MyCommand.Path
-    if (-not $self) { $self = $PSCommandPath }
+    $self = $PSCommandPath
     $action = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$self`" -Watch"
     schtasks /Create /TN "claude-guard" /TR $action /SC ONLOGON /RL HIGHEST /F
     Write-Log "已注册计划任务 claude-guard（登录时启动）"

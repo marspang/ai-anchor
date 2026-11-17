@@ -55,6 +55,7 @@ description: AI 锚定（ai-anchor）——在 OpenWrt（ImmortalWrt / iStoreOS 
   - 禁止 fallback / url-test / load-balance / relay
   - 禁止放多个节点（切换 IP 是封号高发点）
 - 新建 `🔒 直连白名单`，`type: select`，成员仅 DIRECT
+- 订阅自带的 AI 组如果已被规则引用，**就地改它的 `type` 与成员，保持组名不变**；改名要同步规则和 DNS，纯风险无收益
 - 注入后立刻 `clash -t -f 生成的配置` 预校验，失败自动回滚
 
 ### C-2. 账号密码型线路（HOST:PORT:USER:PASS）
@@ -162,6 +163,33 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 5. 持久化：重启 OpenClash（不是整机），重跑 1–3，结果不变。
 6. 最后输出表格：项目 / 做法 / 校验结果 / 回滚命令。
 
+## 配置完成后必须核对（验收清单）
+
+上一节是「跑什么命令」，这一节是「怎么判定它真的成了」。逐项过，任何一项不过都不算交付。
+
+| # | 检查项 | 通过标准 |
+| --- | --- | --- |
+| 1 | 改动落在哪一层 | 组 / 规则 / DNS 全在 `/etc/openclash/custom/`；点一次「更新配置」后重新核对仍然生效。改订阅源 `config/<name>.yaml` 的一律不算通过 |
+| 2 | 出口归属 | 报告里必须有 `country / isp / as / proxy / hosting` 五个字段；地区在 Claude 支持范围内，`proxy` 与 `hosting` 均为 `false` |
+| 3 | 三方一致 | `ipinfo.io/ip` = `claude.ai/cdn-cgi/trace` = `chatgpt.com/cdn-cgi/trace`，三个字符串完全相同 |
+| 4 | 兜底规则 | 规则最后一条是 `MATCH → AI 住宅组`；兜底是 DIRECT 或被删等于把漏网流量打回真实 IP |
+| 5 | 规则总量 | 至少 70 条（AI 33 + Adobe 11 + Office 12 + 内网 12 + geosite 2 + UDP 1 + MATCH 1）；明显偏少说明清单被截断 |
+| 6 | Adobe / Office 全量 | Adobe 11 条（含 `adobelogin` / `creativecloud` / `acrobat` / `licensing`）、Office 12 条（含 `microsoftonline` / `msftconnecttest` / `windowsupdate` / `microsoftstore`） |
+| 7 | AI 域名 DNS | 每条 AI 域名显式指定远端 DoH，不依赖 `geosite:geolocation-!cn` 归类（geosite 版本不同、子域未必收录） |
+| 8 | 端口收敛 | 只剩面板 9090、DNS 7874、TUN；`http / socks / redir / tproxy / mixed` 全为 0 |
+| 9 | QUIC 拦截持久化 | 规则写在 `/etc/nftables.d/` 或 `uci firewall`；重启后 `nft list ruleset` 里仍在。临时 `nft add` 不算 |
+| 10 | 回滚可用 | 备份文件路径与恢复命令里的路径一致；关掉几个端口就恢复几个；改配置**前**先空跑一遍 `cp` 确认源文件存在 |
+| 11 | IP 静默变化有感知 | `select` 单节点不会换 IP，但服务商换 IP 也不会断流；装了出口守护且 `EXPECT_IP` = 锚定 IP，`--check` 返回 0 |
+| 12 | 体检截图 | `ip.net.coffee/claude` 的实测截图，不接受「应该仍是全绿」 |
+
+### 交付报告的红线
+
+- 禁止用「应该」「理论上」「大概率」描述验证结果；跑过就贴完整输出，没跑就明写没跑
+- 「原状态」与「现在」两列要对得上，数量自洽（说 6 处就列 6 行，⚠ 也算一处）
+- 备份路径、恢复路径、文件权限三者在报告里必须一致，回滚命令要先自己验证一次文件存在
+- `clash -t` 只接受退出码 `0`，不接受「只剩下 -t 模式对 UI 路径的误报」这种说法
+- 说「QUIC 绕不过去」必须附 UDP 出口实测：`udp: true` 只是允许，不代表服务端真的转发
+
 ## 交付
 
 ### 1. 给用户的使用说明（必须给，不能省略）
@@ -193,7 +221,7 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 - 复制 `scripts/claude-guard.sh` 到本机，配置 `~/.config/claude-guard/config`，`EXPECT_IP` 用当前锚定 IP
 - 顺序：`--check` → `--watch --dry-run` → `--install`
 - 必须现场验证两次：把 `EXPECT_IP` 改错时返回 1，改回时返回 0
-- Windows 用 `scripts/claude-guard.ps1`，参数相同
+- Windows 用 `scripts/claude-guard.ps1`，支持 `-Check / -Watch / -DryRun / -Install / -Uninstall`，**不支持 hosts 阻断**（`BLOCK_HOSTS` 忽略），杀进程只覆盖桌面客户端，浏览器里的 claude.ai 管不到
 
 ### 4. 路由器白名单（可选，先问，不要默认做）
 
