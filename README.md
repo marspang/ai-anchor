@@ -3,7 +3,7 @@
 <h3 align="center">给 AI 流量打一个钉子：把出口 IP 固定成同一个静态住宅地址<br>国内与 Adobe / Office 照常直连，Claude 只认这一个出口</h3>
 
 <p align="center">
-<a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.2.1-f1c40f?style=for-the-badge" alt="版本"></a>
+<a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.2.2-f1c40f?style=for-the-badge" alt="版本"></a>
 <a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E5%BD%A2%E5%BC%8F-Agent%20Skill-2f81f7?style=for-the-badge" alt="形式"></a>
 <img src="https://img.shields.io/badge/%E5%86%85%E6%A0%B8-OpenClash%20%C2%B7%20mihomo-fe7d37?style=for-the-badge" alt="内核">
 <img src="https://img.shields.io/badge/%E7%9B%AE%E6%A0%87-%E9%98%B2%E6%AD%A2%E5%9B%A0%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AF%BC%E8%87%B4%E7%9A%84%E5%B0%81%E5%8F%B7-e35d6a?style=for-the-badge" alt="目标">
@@ -16,7 +16,7 @@
 ## 目录
 
 - [它到底在钉什么](#它到底在钉什么) · [支持的设备与实测情况](#支持的设备与实测情况)
-- [快速开始](#快速开始) · [两种线路怎么接](#两种线路怎么接)
+- [快速开始](#快速开始) · [主路由还是旁路由](#主路由还是旁路由) · [两种线路怎么接](#两种线路怎么接)
 - [三层防封组合](#三层防封组合) · [它治不了什么](#它治不了什么)
 - [出口守护脚本](#出口守护脚本) · [本机风险体检](#本机风险体检)
 - [给最终用户的使用说明](#给最终用户的使用说明)
@@ -119,6 +119,31 @@ cp -R /tmp/ai-anchor ~/.trae-cn/skills/ai-anchor
 | F | 内网生效：DHCP 下发路由器自身 DNS，重启 dnsmasq，终端重连 |
 
 > 所有改动都落在 `/etc/openclash/custom/` 下，**不碰订阅本身**，订阅更新也不会覆盖。每个文件改前先备份 `.bak.<日期>`。
+
+---
+
+## 主路由还是旁路由
+
+同一个技能，两种接法，**分流逻辑是反的**，先选对模式再动手。
+
+| | 主路由（家里常见） | 旁路由（公司/宿舍常见） |
+| --- | --- | --- |
+| 谁在拨号 | 这台路由器 | 上游路由器，它只负责分流 |
+| 默认行为 | **所有设备都走代理** | **所有设备都不走代理** |
+| 加例外 | 规则里写 `SRC-IP-CIDR,192.168.1.23/32,DIRECT` 让个别设备直连 | 把个别设备的网关 / DNS 指到这台旁路由，它才进入代理 |
+| 例外写在哪 | OpenClash 规则 | 上游 DHCP 或设备网络设置，**不在 OpenClash 里** |
+| 挂了会怎样 | 全家断网 | 只有把网关指过来的设备断网 |
+
+一句话记住：**主路由是“默认全走，逐个放行”；旁路由是“默认都不走，逐个接进来”。**
+
+旁路由最容易踩的四个坑：
+
+1. **双 DHCP**：旁路由和上游同时发 DHCP，客户端网关随机飘，表现就是“有时走代理有时不走”。只能留一个。
+2. **没指过来的设备完全不受控**：它的 AI 流量根本不经过旁路由，你的规则、DNS、IPv6 关闭统统无效。
+3. **IPv6 关不掉全局**：在旁路由上关 IPv6 只关掉它自己，客户端照样从上游 RA 拿全局 IPv6 直连。要真关，得上游关 RA 或客户端禁用 IPv6。
+4. **故障半径要提前说**：公司环境里，旁路由一挂，哪些同事会断网必须提前讲清楚。
+
+配置步骤和判定命令在 `SKILL.md` 的「先判定部署模式」一节。
 
 ---
 
