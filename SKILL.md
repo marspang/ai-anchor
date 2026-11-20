@@ -131,14 +131,17 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 3. 无 IPv6 泄漏。
 4. 无 DNS 泄漏：AI 域名经代理或远端 DoH 解析，IP 规则加 `no-resolve`。
 5. 无 QUIC 旁路：节点必须 vless/vmess 且支持 UDP，TUN 接管 UDP。
-6. 时区/语言与住宅 IP 归属地一致（设备端单独设置）。
-7. 指纹稳定：不频繁换 UA、不频繁清指纹；同账号不多设备多 IP 同时在线。
-8. 会话期间不切节点：`store-selected` 生效，重启后仍是同一节点。
-9. 规则命中校验：`clash -t` + OpenClash 日志确认 AI 请求命中 `🤖 AI住宅IP`。
-10. 所有改动文件先备份 `.bak.<日期>`。
-11. 整链路体检：用 `https://ip.net.coffee/claude/` 实测。
-12. 浏览器层：用 noleaker（时区/语言跟随出口，拦 WebRTC、DNS、QUIC 泄漏）。
-13. 系统层：出口守护，出口 ≠ 锚定 IP 时杀 Claude 进程 + 阻断，见 `references/guard-design.md`。
+6. 时区/语言与住宅 IP 归属地一致（设备端单独设置，关掉自动设置）。
+7. 指纹稳定：不频繁换 UA、不频繁清指纹、不同时开多个浏览器配置。
+8. 指纹一致：字体、屏幕分辨率、时区、语言跟着出口地区走；出差回来别让系统自己改回去。
+9. 设备与账号：同一台设备不登录多个账号，同一账号不在多设备多 IP 同时在线——平台按「设备指纹 + 账号」做关联，换号不换设备等于换名不换人。
+10. 账号面信息：绑定手机号、支付方式、邮箱地区与出口地区一致。
+11. 会话期间不切节点：`store-selected` 生效，重启后仍是同一节点。
+12. 规则命中校验：`clash -t` + OpenClash 日志确认 AI 请求命中 `🤖 AI住宅IP`。
+13. 所有改动文件先备份 `.bak.<日期>`。
+14. 整链路体检：用 `https://ip.net.coffee/claude/` 实测。
+15. 浏览器层：用 noleaker（时区/语言跟随出口，拦 WebRTC、DNS、QUIC 泄漏）。
+16. 系统层：出口守护，出口 ≠ 锚定 IP 时杀 Claude 进程 + 阻断，见 `references/guard-design.md`。
 
 ## 自测（必须真跑，贴输出）
 
@@ -158,6 +161,9 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
    - WebRTC / UDP 未泄露，UDP 出口 IP 与出口 IP 一致
    - 时区、语言与 IP 归属地一致
    - 中国出口 IPv4、Cloudflare 出口 IP、Claude 出口 IP 三者一致
+   - 是否独享：服务商有没有明确写 dedicated；共享住宅池里前手的使用记录会算在你头上
+   - 历史信誉：`scamalytics` / `ipqualityscore` 免费查询，fraud score 越低越好，出现「高风险 / 滥用」直接换 IP
+   - rDNS / ASN：反查应指向住宅 ISP，而不是伪装成住宅段的机房
    任一不达标先定位（DNS / UDP / 规则未命中），修完复测，不要直接交差。
 4. 规则命中：看 OpenClash 运行日志，确认走的是 `🤖 AI住宅IP` / `DIRECT`。
 5. 持久化：重启 OpenClash（不是整机），重跑 1–3，结果不变。
@@ -181,6 +187,7 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 | 10 | 回滚可用 | 备份文件路径与恢复命令里的路径一致；关掉几个端口就恢复几个；改配置**前**先空跑一遍 `cp` 确认源文件存在 |
 | 11 | IP 静默变化有感知 | `select` 单节点不会换 IP，但服务商换 IP 也不会断流；装了出口守护且 `EXPECT_IP` = 锚定 IP，`--check` 返回 0 |
 | 12 | 体检截图 | `ip.net.coffee/claude` 的实测截图，不接受「应该仍是全绿」 |
+| 13 | IP 是否干净 | 独享住宅段（非共享池）；scamalytics / ipqualityscore 无高风险或滥用标记；rDNS 指向住宅 ISP |
 
 ### 交付报告的红线
 
