@@ -88,11 +88,12 @@ description: AI 锚定（ai-anchor）——在 OpenWrt（ImmortalWrt / iStoreOS 
 
 ### D. 规则（写进 openclash_custom_rules.list，置顶，顺序不能乱）
 1. 局域网/保留地址 → `DIRECT,no-resolve`
-2. AI 域名 → `🤖 AI住宅IP`（清单见下，必须全量）
-3. Adobe 域名 → `DIRECT`
-4. Microsoft Office/365 域名 → `DIRECT`
-5. `GEOSITE,cn` / `GEOIP,CN` → `DIRECT`
-6. `MATCH → 🤖 AI住宅IP`（兜底走住宅 IP，等效“全局”但保留国内直连；漏配的子域、冷门 CDN、桌面客户端都不会直连暴露真实 IP）
+2. 国内 AI 域名 → `DIRECT`（清单见下；必须在 AI 域名规则**之前**，否则会被兜底规则带去住宅 IP）
+3. AI 域名 → `🤖 AI住宅IP`（清单见下，必须全量）
+4. Adobe 域名 → `DIRECT`
+5. Microsoft Office/365 域名 → `DIRECT`
+6. `GEOSITE,cn` / `GEOIP,CN` → `DIRECT`
+7. `MATCH → 🤖 AI住宅IP`（兜底走住宅 IP，等效“全局”但保留国内直连；漏配的子域、冷门 CDN、桌面客户端都不会直连暴露真实 IP）
 
 ### E. DNS
 - fake-ip 模式，`fake-ip-filter` 放行局域网与 `*.lan`
@@ -115,6 +116,22 @@ gemini.google.com, bard.google.com, aistudio.google.com, makersuite.google.com, 
 x.ai, grok.com, perplexity.ai, poe.com, copilot.microsoft.com, midjourney.com, huggingface.co, cursor.com, cursor.sh, moonshot.ai
 
 （deepseek.com 在国内使用时给 DIRECT。）
+
+**为什么单独列一份国内 AI 直连清单：** 这些域名如果漏掉，会被末尾的 `MATCH` 兜底送去住宅 IP。结果是国内 AI 变慢、每次都绕一圈美国，而且平白给住宅 IP 增加一堆和本人使用习惯无关的访问特征。放在 AI 域名规则**之前**，确保它们永远走直连。
+
+## 国内 AI 直连清单（放在 AI 域名规则之前）
+
+```
+deepseek.com, api.deepseek.com, chat.deepseek.com,
+moonshot.cn, kimi.com, kimi.moonshot.cn,
+tongyi.aliyun.com, dashscope.aliyuncs.com, bailian.console.aliyun.com,
+doubao.com, volcengine.com, ark.cn-beijing.volces.com,
+yiyan.baidu.com, wenxin.baidu.com, qianfan.baidubce.com,
+chatglm.cn, bigmodel.cn, open.bigmodel.cn, zhipuai.cn,
+hunyuan.tencent.com, minimax.cn, minimaxi.com, stepfun.com
+```
+
+不在清单里的国内 AI 服务，按同样规则补一行即可；判断方法很简单——**服务主体在国内、账号在国内注册、付费走国内渠道，就走直连。**
 
 ## Adobe 直连清单
 
@@ -188,6 +205,7 @@ office.com, office365.com, microsoft.com, microsoftonline.com, live.com, outlook
 | 11 | IP 静默变化有感知 | `select` 单节点不会换 IP，但服务商换 IP 也不会断流；装了出口守护且 `EXPECT_IP` = 锚定 IP，`--check` 返回 0 |
 | 12 | 体检截图 | `ip.net.coffee/claude` 的实测截图，不接受「应该仍是全绿」 |
 | 13 | IP 是否干净 | 独享住宅段（非共享池）；scamalytics / ipqualityscore 无高风险或滥用标记；rDNS 指向住宅 ISP |
+| 14 | 本机体检 | 在用户机器上跑 `scripts/claude-risk-audit.sh`，FAIL 项清零，或逐条说明为什么不影响 |
 
 ### 交付报告的红线
 

@@ -3,7 +3,7 @@
 <h3 align="center">给 AI 流量打一个钉子：把出口 IP 固定成同一个静态住宅地址<br>国内与 Adobe / Office 照常直连，Claude 只认这一个出口</h3>
 
 <p align="center">
-<a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.2.0-f1c40f?style=for-the-badge" alt="版本"></a>
+<a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.2.1-f1c40f?style=for-the-badge" alt="版本"></a>
 <a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E5%BD%A2%E5%BC%8F-Agent%20Skill-2f81f7?style=for-the-badge" alt="形式"></a>
 <img src="https://img.shields.io/badge/%E5%86%85%E6%A0%B8-OpenClash%20%C2%B7%20mihomo-fe7d37?style=for-the-badge" alt="内核">
 <img src="https://img.shields.io/badge/%E7%9B%AE%E6%A0%87-%E9%98%B2%E6%AD%A2%E5%9B%A0%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AF%BC%E8%87%B4%E7%9A%84%E5%B0%81%E5%8F%B7-e35d6a?style=for-the-badge" alt="目标">
@@ -18,7 +18,7 @@
 - [它到底在钉什么](#它到底在钉什么) · [支持的设备与实测情况](#支持的设备与实测情况)
 - [快速开始](#快速开始) · [两种线路怎么接](#两种线路怎么接)
 - [三层防封组合](#三层防封组合) · [它治不了什么](#它治不了什么)
-- [出口守护脚本](#出口守护脚本)
+- [出口守护脚本](#出口守护脚本) · [本机风险体检](#本机风险体检)
 - [给最终用户的使用说明](#给最终用户的使用说明)
 - [人不在家怎么办](#人不在家怎么办多地点)
 - [目录结构](#目录结构)
@@ -114,7 +114,7 @@ cp -R /tmp/ai-anchor ~/.trae-cn/skills/ai-anchor
 | A | 先采集：读现有 YAML、确认 fake-ip + TUN、核对 `custom/` 四个文件、看内核版本 |
 | B | 运行参数：订阅转换、`store-selected`、关 IPv6、开 custom 规则、UDP 接管 |
 | C | 代理组：建 `🤖 AI住宅IP`（单节点）与 `🔒 直连白名单`，注入后 `clash -t` 预校验 |
-| D | 规则：局域网直连 → AI 域名 → Adobe → Office → `GEOSITE,cn` → `MATCH` 兜底 |
+| D | 规则：局域网直连 → 国内 AI 直连 → AI 域名 → Adobe → Office → `GEOSITE,cn` → `MATCH` 兜底 |
 | E | DNS：fake-ip-filter、nameserver-policy、`proxy-server-nameserver` |
 | F | 内网生效：DHCP 下发路由器自身 DNS，重启 dnsmasq，终端重连 |
 
@@ -219,6 +219,7 @@ Windows 用同一份 `KEY=VALUE` 配置，路径换成 `%USERPROFILE%\.config\cl
 | 参数 | 作用 |
 | --- | --- |
 | `--check` | 只查一次，出口正确返回 `0`，错误返回 `1`（适合塞进别的脚本） |
+| `--prelaunch` | 启动前闸门：出口不对就返回 `1` 并弹通知，配合下面的启动器使用 |
 | `--watch` | 常驻轮询，异常即杀进程 |
 | `--watch --dry-run` | 只打日志不杀进程，**先跑这个确认不会误杀** |
 | `--install` | 写 `~/Library/LaunchAgents/com.local.claude-guard.plist` 并加载（Linux 用 systemd user unit） |
@@ -231,6 +232,28 @@ Windows 用同一份 `KEY=VALUE` 配置，路径换成 `%USERPROFILE%\.config\cl
 ./claude-guard.sh --watch --dry-run        # 观察几分钟，看有没有误报
 ./claude-guard.sh --install                # 确认没问题再常驻
 ```
+
+### 启动前闸门
+
+`--watch` 是「已经连上了再杀」，会留一个轮询窗口。想连窗口都不留，就把 `--prelaunch` 套在启动命令前面——出口不对，Claude 根本起不来：
+
+```bash
+# macOS：在 ~/.zshrc 里加一个函数，以后用 claude-safe 启动
+claude-safe() {
+  ~/.trae-cn/skills/ai-anchor/scripts/claude-guard.sh --prelaunch || return 1
+  open -a "Claude"
+}
+```
+
+```powershell
+# Windows：在 PowerShell profile 里加
+function claude-safe {
+  & "$HOME\.trae\skills\ai-anchor\scripts\claude-guard.ps1" -Check
+  if ($LASTEXITCODE -eq 0) { Start-Process "Claude" } else { Write-Host "出口不对，已阻止启动" }
+}
+```
+
+两道一起用才是完整的：`--prelaunch` 挡住「一开始就不该开」的情况，`--watch` 挡住「开着开着出口变了」的情况。
 
 ### 验证方法
 
@@ -261,6 +284,30 @@ EXPECT_IP=<真实IP> ./claude-guard.sh --check  # 应该返回 0
   有值但对应端口没程序监听，就说明它该关掉了；有值且真的在跑第三方代理客户端的，先决定留哪个入口，不要两个同时开。
 
 - **Windows 只验证了 PowerShell 5.1 + Windows 11 24H2**：`-Check`、`-Watch`、真实杀进程、`schtasks` 安装 / 卸载均已跑通；**恢复分支（`[RECOVER]`）只在 macOS 上实测过**，Windows 侧代码同构、未单独验证；进程检测按可执行文件名匹配（默认 `Claude`），装成 Store 版后进程名不同时需改 `APP_NAME`，改错会打 `[WARN]` 而不是静默失效；脚本必须保存为 UTF-8 with BOM，否则中文系统的 5.1 会按 GBK 解析中文注释导致语法错误。
+
+---
+
+## 本机风险体检
+
+`scripts/claude-risk-audit.sh` 是只读的，什么都不改，跑完给一份中文报告。用来回答一个问题：**网络层配好了，这台机器还有哪些地方在被平台扣分。**
+
+```bash
+./claude-risk-audit.sh           # 完整报告
+./claude-risk-audit.sh --quiet   # 只看 FAIL / WARN
+```
+
+| 检查项 | 看什么 | 为什么算风险 |
+| --- | --- | --- |
+| 出口 IP 属性 | 地区、`hosting`、`proxy`、ISP / ASN | 香港 / 机房 / 被标记的 IP 直接被判死 |
+| 时区 / 语言 | 系统时区与出口地区是否一致 | 出口美国、时区上海，是典型的异地操作特征 |
+| 账号痕迹 | `ANTHROPIC_API_KEY` 与 OAuth 是否共存、凭据文件权限 | 同一账号多入口登录、凭据裸奔 |
+| 会话频率 | 近 7 天消息时间戳的每秒 / 每分钟峰值 | >5 条/秒、>60 条/分属于脚本化调用，不是人在打字 |
+| Shell 批量 | history 里的 `for ... claude`、`xargs claude`、`sub2api` | 批量调用是最明显的自动化痕迹 |
+| 本机代理残留 | 系统代理是否开启、7890/7891/7893 是否在监听 | 和路由器 TUN 同时存在就是双入口 |
+
+退出码：`0` 无硬伤，`1` 有 FAIL。每项都会直接给出该改什么，不需要你再对照文档。
+
+> 它只做体检，不解封、不改配置。网络层的问题回 `SKILL.md` 修；`FAIL` 里的时区、账号、频率属于行为面，只能靠你自己保持习惯。
 
 ---
 
@@ -384,8 +431,9 @@ curl -s https://claude.ai/cdn-cgi/trace | grep ip=     # 必须是家里那个�
 
 ```
 ai-anchor/
-├── SKILL.md                       技能主文件：适用场景 / 输入 / A-F 执行流程 / 域名清单 / 13 条防封清单 / 交付要求
+├── SKILL.md                       技能主文件：适用场景 / 输入 / A-F 执行流程 / 域名清单 / 16 条防封清单 / 交付要求
 ├── README.md                      本文件
+├── LICENSE                        MIT
 ├── docs/
 │   └── topology.svg               拓扑图：设备 → 软路由分流 → 三个去向 → 出口守护
 ├── references/
@@ -393,8 +441,9 @@ ai-anchor/
 │   ├── network-isolation.md       三平台网络隔离命令（忘 WiFi / 关网卡 / 外出处理）
 │   └── guard-design.md            出口守护设计：三层组合、配置示例、部署、误杀防护、路由器白名单
 └── scripts/
-    ├── claude-guard.sh            macOS / Linux 出口守护（launchd / systemd）
-    └── claude-guard.ps1           Windows 出口守护（schtasks）
+    ├── claude-guard.sh            macOS / Linux 出口守护（launchd / systemd）+ 启动前闸门
+    ├── claude-guard.ps1           Windows 出口守护（schtasks）
+    └── claude-risk-audit.sh       本机封号风险体检（只读，6 项）
 ```
 
 ---

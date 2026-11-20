@@ -3,6 +3,7 @@
 #
 # 用法：
 #   claude-guard.sh --check              只检测一次（0=正常 1=异常）
+#   claude-guard.sh --prelaunch          启动前闸门：异常时拒绝放行并提示（0=可开 1=别开）
 #   claude-guard.sh --watch              常驻守护（默认）
 #   claude-guard.sh --watch --dry-run    只打印动作，不杀进程、不改 hosts
 #   claude-guard.sh --install            安装为登录自启（macOS launchd）
@@ -28,6 +29,7 @@ DRY_RUN=0
 for arg in "$@"; do
   case "$arg" in
     --check) MODE="check" ;;
+    --prelaunch) MODE="prelaunch" ;;
     --watch) MODE="watch" ;;
     --dry-run) DRY_RUN=1 ;;
     --install) MODE="install" ;;
@@ -52,7 +54,14 @@ notify() {
 }
 
 fetch_ip() {
-  curl -s --max-time 8 "$CHECK_URL" 2>/dev/null | awk -F= '/^ip=/{print $2; exit}'
+  local body ip
+  body="$(curl -s --max-time 8 "$CHECK_URL" 2>/dev/null)"
+  ip="$(printf '%s\n' "$body" | awk -F= '/^ip=/{print $2; exit}')"
+  # 兼容 ipinfo.io/ip 这类直接返回一个 IP 的接口
+  if [ -z "$ip" ]; then
+    ip="$(printf '%s' "$body" | tr -d ' \r\n' | sed -nE 's/^([0-9A-Fa-f:.]+)$/\1/p')"
+  fi
+  printf '%s' "$ip"
 }
 
 kill_claude() {
@@ -122,6 +131,23 @@ check_once() {
   return 1
 }
 
+prelaunch() {
+  local ip
+  ip="$(fetch_ip)"
+  if [ -z "$EXPECT_IP" ]; then
+    log "[ERROR] 未配置 EXPECT_IP，拒绝放行"
+    notify "未配置 EXPECT_IP，已阻止启动 Claude"
+    return 2
+  fi
+  if [ "$ip" = "$EXPECT_IP" ]; then
+    log "[OK] 出口正常（${ip}），放行"
+    return 0
+  fi
+  log "[BLOCK] 出口异常：当前=${ip:-取不到} 期望=${EXPECT_IP}，已阻止启动 Claude"
+  notify "出口 IP 不对，已阻止启动 Claude"
+  return 1
+}
+
 watch() {
   local fails=0 blocked=0 ip
   log "开始守护：期望=$EXPECT_IP 间隔=${INTERVAL}s 阈值=$THRESHOLD dry-run=$DRY_RUN"
@@ -186,6 +212,7 @@ uninstall_launchd() {
 
 case "$MODE" in
   check) check_once ;;
+  prelaunch) prelaunch ;;
   watch) watch ;;
   install) install_launchd ;;
   uninstall) uninstall_launchd ;;
