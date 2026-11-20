@@ -3,7 +3,7 @@
 <h3 align="center">给 AI 流量打一个钉子：把出口 IP 固定成同一个静态住宅地址<br>国内与 Adobe / Office 照常直连，Claude 只认这一个出口</h3>
 
 <p align="center">
-<a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.2.2-f1c40f?style=for-the-badge" alt="版本"></a>
+<a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v1.2.3-f1c40f?style=for-the-badge" alt="版本"></a>
 <a href="https://github.com/marspang/ai-anchor"><img src="https://img.shields.io/badge/%E5%BD%A2%E5%BC%8F-Agent%20Skill-2f81f7?style=for-the-badge" alt="形式"></a>
 <img src="https://img.shields.io/badge/%E5%86%85%E6%A0%B8-OpenClash%20%C2%B7%20mihomo-fe7d37?style=for-the-badge" alt="内核">
 <img src="https://img.shields.io/badge/%E7%9B%AE%E6%A0%87-%E9%98%B2%E6%AD%A2%E5%9B%A0%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AF%BC%E8%87%B4%E7%9A%84%E5%B0%81%E5%8F%B7-e35d6a?style=for-the-badge" alt="目标">
@@ -135,6 +135,10 @@ cp -R /tmp/ai-anchor ~/.trae-cn/skills/ai-anchor
 | 挂了会怎样 | 全家断网 | 只有把网关指过来的设备断网 |
 
 一句话记住：**主路由是“默认全走，逐个放行”；旁路由是“默认都不走，逐个接进来”。**
+
+旁路由本身还有两种接法：**接管 DHCP**（所有设备都用上代理，挂了全网断）和**手动指向**（只改需要的那几台，风险小但会悄悄失效）。选一种，别混用。公司、宿舍这类环境建议先想清楚故障半径。
+
+只想让自己这一台登录 Claude，可以在规则里按源 IP 做白名单，其他设备访问 AI 域名直接 `REJECT`——既防连坐，也防同事无意间用同一个号。写法在 `SKILL.md` 的「只允许一台设备登录 Claude」。
 
 旁路由最容易踩的四个坑：
 
